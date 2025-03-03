@@ -1,0 +1,6 @@
+C:\Users\proye\Documents\MCUXpressoIDE_24.12.148\workspace\frdmrw612_lwip_mqtt_freertos_Practica_2\drivers/fsl_gpio.h:153:20:GPIO_PinWrite	24	static
+../board/hardware_init.c:22:6:BOARD_InitModuleClock	8	static
+../board/hardware_init.c:28:13:MDIO_Init	16	static
+../board/hardware_init.c:37:17:MDIO_Write	16	static
+../board/hardware_init.c:42:17:MDIO_Read	16	static
+../board/hardware_init.c:47:6:BOARD_InitHardware	16	static
