@@ -19,6 +19,7 @@
 #include "lwip/api.h"
 #include "lwip/apps/mqtt.h"
 #include "lwip/tcpip.h"
+#include <stdlib.h> // Para la función rand()
 
 // FIXME cleanup
 
@@ -252,10 +253,80 @@ static void mqtt_message_published_cb(void *arg, err_t err)
  */
 static void publish_message(void *ctx)
 {
-    static const char *topic   = "lwip_topic/100";
-    static const char *message = "message from board";
+    static const char *topic = "PB2025_MZNO/sesion/log";
+    static int uptime_counter = 0;
+    char message[50];
 
     LWIP_UNUSED_ARG(ctx);
+
+    snprintf(message, sizeof(message), "Uptime: %d seconds", uptime_counter);
+    uptime_counter++;
+
+    PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
+
+    mqtt_publish(mqtt_client, topic, message, strlen(message), 1, 0, mqtt_message_published_cb, (void *)topic);
+}
+
+/*!
+ * @brief Publishes a voltage message. To be called on tcpip_thread.
+ */
+static void publish_voltage_message(void *ctx)
+{
+    static const char *topic = "PB2025_MZNO/equipment/voltage";
+    char message[20];
+    int voltage = (rand() % 31) + 100; // Genera un valor aleatorio entre 110 y 140
+
+    LWIP_UNUSED_ARG(ctx);
+
+    snprintf(message, sizeof(message), " %d", voltage);
+
+    PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
+
+    mqtt_publish(mqtt_client, topic, message, strlen(message), 1, 0, mqtt_message_published_cb, (void *)topic);
+}
+
+/*!
+ * @brief Publishes a voltage status message. To be called on tcpip_thread.
+ */
+static void publish_voltage_status_message(void *ctx)
+{
+    static const char *topic = "PB2025_MZNO/equipment/status";
+    char message[50];
+    int voltage = (rand() % 31) + 100; // Genera un valor aleatorio entre 110 y 140
+
+    LWIP_UNUSED_ARG(ctx);
+
+    if (voltage < 110)
+    {
+        snprintf(message, sizeof(message), "voltaje bajo", voltage);
+    }
+    else if (voltage > 120)
+    {
+        snprintf(message, sizeof(message), "voltaje alto", voltage);
+    }
+    else
+    {
+        snprintf(message, sizeof(message), "voltaje correcto", voltage);
+    }
+
+    PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
+
+    mqtt_publish(mqtt_client, topic, message, strlen(message), 1, 0, mqtt_message_published_cb, (void *)topic);
+}
+
+/*!
+ * @brief Publishes a session notification message. To be called on tcpip_thread.
+ */
+static void publish_session_notification(void *ctx)
+{
+    static const char *topic = "PB2025_MZNO/notifications/sessions";
+    const char *users[] = {"Anita", "Lupita", "Fernanda"};
+    char message[50];
+    int user_index = rand() % 3; // Selecciona aleatoriamente entre 0, 1 y 2
+
+    LWIP_UNUSED_ARG(ctx);
+
+    snprintf(message, sizeof(message), "User in session: %s", users[user_index]);
 
     PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
 
@@ -315,6 +386,54 @@ static void app_thread(void *arg)
             if (err != ERR_OK)
             {
                 PRINTF("Failed to invoke publishing of a message on the tcpip_thread: %d.\r\n", err);
+            }
+            i++;
+        }
+
+        sys_msleep(1000U);
+    }
+
+    /* Publish voltage messages */
+    for (i = 0; i < 15;)
+    {
+        if (connected)
+        {
+            err = tcpip_callback(publish_voltage_message, NULL);
+            if (err != ERR_OK)
+            {
+                PRINTF("Failed to invoke publishing of a voltage message on the tcpip_thread: %d.\r\n", err);
+            }
+            i++;
+        }
+
+        sys_msleep(1000U);
+    }
+
+    /* Publish voltage status messages */
+    for (i = 0; i < 15;)
+    {
+        if (connected)
+        {
+            err = tcpip_callback(publish_voltage_status_message, NULL);
+            if (err != ERR_OK)
+            {
+                PRINTF("Failed to invoke publishing of a voltage status message on the tcpip_thread: %d.\r\n", err);
+            }
+            i++;
+        }
+
+        sys_msleep(1000U);
+    }
+
+    /* Publish session notification messages */
+    for (i = 0; i < 5;)
+    {
+        if (connected)
+        {
+            err = tcpip_callback(publish_session_notification, NULL);
+            if (err != ERR_OK)
+            {
+                PRINTF("Failed to invoke publishing of a session notification message on the tcpip_thread: %d.\r\n", err);
             }
             i++;
         }

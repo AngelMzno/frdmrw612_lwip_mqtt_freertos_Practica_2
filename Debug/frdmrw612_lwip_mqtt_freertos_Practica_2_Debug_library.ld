@@ -6,7 +6,7 @@
  * Generated linker script file for RW612
  * Created from library.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.30
- * MCUXpresso IDE v24.12 [Build 148] [2025-01-10] on 6 mar. 2025 16:45:59
+ * MCUXpresso IDE v24.12 [Build 148] [2025-01-10] on 6 mar. 2025 17:25:49
  */
 
 GROUP (
