@@ -1,7 +1,7 @@
 ../source/mqtt_freertos.c:95:13:mqtt_topic_subscribed_cb	24	static
 ../source/mqtt_freertos.c:112:13:mqtt_incoming_publish_cb	24	static
 ../source/mqtt_freertos.c:122:13:mqtt_incoming_data_cb	32	static
-../source/mqtt_freertos.c:149:13:mqtt_subscribe_topics	40	static
+../source/mqtt_freertos.c:149:13:mqtt_subscribe_topics	48	static
 ../source/mqtt_freertos.c:177:13:mqtt_connection_cb	32	static
 ../source/mqtt_freertos.c:223:13:connect_to_mqtt	24	static
 ../source/mqtt_freertos.c:236:13:mqtt_message_published_cb	24	static

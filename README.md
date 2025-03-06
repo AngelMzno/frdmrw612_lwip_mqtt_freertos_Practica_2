@@ -29,13 +29,13 @@ El sistema utilizará 10 tópicos para la comunicación entre la tarjeta y la ap
   - `PB2025_equipment/voltage`:  Publica la medición de voltaje en tiempo real del potenciómetro.
   - `PB2025_equipment/status`: Indica si el sistema está funcionando correctamente.
   - `PB2025_alerts/message`: Envía mensajes de alerta sobre el estado del sistema.
-  - `PB2025_notifications/sessions`:  Notifica la finalización de una sesión de tratamiento.
+
 - **Subscriber:**
   - `PB2025_configuration/frequency`: Cambia la frecuencia de muestreo (1-10 segundos).
   - `PB2025_control/start`: Comando para iniciar el registro de la sesión.
   - `PB2025_control/stop`: Comando para finalizar el registro de la sesión.
   - `PB2025_monitoring/status`: Permite consultar el estado actual del sistema en cualquier momento.
-  - `PB2025_configuration/update`: Actualiza las configuraciones del sistema.
+
 
 ### 3. Interacción con la Aplicación Móvil
 - **IoT MQTT Panel (Android):** El sistema estará conectado a esta aplicación a través del Broker MQTT, permitiendo a los usuarios monitorear el voltaje, iniciar y detener sesiones, y recibir mensajes de estado.

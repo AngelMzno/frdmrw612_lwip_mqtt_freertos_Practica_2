@@ -148,8 +148,8 @@ static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t f
  */
 static void mqtt_subscribe_topics(mqtt_client_t *client)
 {
-    static const char *topics[] = {"lwip_topic/#", "lwip_other/#"};
-    int qos[]                   = {0, 1};
+    static const char *topics[] = {"PB2025_MZNO/configuration/frequency", "PB2025_MZNO/control/start", "PB2025_MZNO/control/stop" , "PB2025_MZNO/monitoring/status"};
+    int qos[]                   = {0, 0, 0, 0};
     err_t err;
     int i;
 
