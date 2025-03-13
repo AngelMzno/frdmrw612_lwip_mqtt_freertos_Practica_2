@@ -6,7 +6,7 @@
  * Generated linker script file for RW612
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.30
- * MCUXpresso IDE v24.12 [Build 148] [2025-01-10] on 13 mar. 2025 00:09:30
+ * MCUXpresso IDE v24.12 [Build 148] [2025-01-10] on 13 mar. 2025 01:19:47
  */
 
 INCLUDE "frdmrw612_lwip_mqtt_freertos_Practica_2_Debug_library.ld"

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "board.h": "c",
+        "fsl_silicon_id.h": "c",
+        "mqtt_freertos.h": "c"
+    }
+}

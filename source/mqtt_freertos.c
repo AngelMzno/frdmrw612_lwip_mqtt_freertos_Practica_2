@@ -21,6 +21,10 @@
 #include "lwip/tcpip.h"
 #include <stdlib.h> // Para la función rand()
 
+#define BLUE_LED_PIN 0U
+#define RED_LED_PIN 1U
+#define GREEN_LED_PIN 12U
+
 // FIXME cleanup
 
 /*******************************************************************************
@@ -243,6 +247,10 @@ static void connect_to_mqtt(void *ctx)
     LWIP_UNUSED_ARG(ctx);
 
     PRINTF("Connecting to MQTT broker at %s...\r\n", ipaddr_ntoa(&mqtt_addr));
+    /*Turn on green led*/
+    GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
+    GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 1U);
+    GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 0U);  
 
     mqtt_client_connect(mqtt_client, &mqtt_addr, EXAMPLE_MQTT_SERVER_PORT, mqtt_connection_cb,
                         LWIP_CONST_CAST(void *, &mqtt_client_info), &mqtt_client_info);

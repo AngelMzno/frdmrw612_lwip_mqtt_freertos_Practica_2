@@ -14,12 +14,18 @@
 #include "app.h"
 #include "fsl_phy.h"
 #include "mqtt_freertos.h"
+#include "fsl_gpio.h"
 
 #include "lwip/opt.h"
 #include "lwip/api.h"
 #include "lwip/dhcp.h"
 #include "lwip/netifapi.h"
 #include "ethernetif.h"
+
+
+#define BLUE_LED_PIN 0U
+#define RED_LED_PIN 1U
+#define GREEN_LED_PIN 12U
 
 /*******************************************************************************
  * Definitions
@@ -113,7 +119,20 @@ static void stack_init(void *arg)
  */
 int main(void)
 {
+    /* Define the init structure for the output LED pin*/
+    gpio_pin_config_t led_config = {
+        kGPIO_DigitalOutput,
+        1,
+    };
+    
     BOARD_InitHardware();
+
+    /* Init output LED GPIO. */
+    GPIO_PortInit(GPIO, 0U);
+    GPIO_PinInit(GPIO, 0U, BLUE_LED_PIN, &led_config);
+    GPIO_PinInit(GPIO, 0U, RED_LED_PIN, &led_config);
+    GPIO_PinInit(GPIO, 0U, GREEN_LED_PIN, &led_config);
+
 
     /* Initialize lwIP from thread */
     if (sys_thread_new("main", stack_init, NULL, INIT_THREAD_STACKSIZE, INIT_THREAD_PRIO) == NULL)
