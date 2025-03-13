@@ -86,6 +86,10 @@ static ip_addr_t mqtt_addr;
 /*! @brief Indicates connection to MQTT broker. */
 static volatile bool connected = false;
 
+/*! @brief Global variable to adjust the sleep interval. */
+static volatile uint32_t publish_interval = 1000U;
+static volatile bool flag_frequency = 0;
+
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -115,6 +119,11 @@ static void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len
     LWIP_UNUSED_ARG(arg);
 
     PRINTF("Received %u bytes from the topic \"%s\": \"", tot_len, topic);
+
+    if (strcmp(topic, "PB2025_MZNO/configuration/frequency") == 0)
+    {
+        flag_frequency = 1;
+    }
 }
 
 /*!
@@ -142,6 +151,14 @@ static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t f
     {
         PRINTF("\"\r\n");
     }
+
+    if (flag_frequency)
+    {
+        publish_interval = atoi((const char *)data)*1000;
+        PRINTF("New publish interval: %d ms\r\n", publish_interval);
+        flag_frequency = 0;
+    }
+
 }
 
 /*!
@@ -326,7 +343,7 @@ static void publish_session_notification(void *ctx)
 
     LWIP_UNUSED_ARG(ctx);
 
-    snprintf(message, sizeof(message), "User in session: %s", users[user_index]);
+    snprintf(message, sizeof(message), "User: %s", users[user_index]);
 
     PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
 
@@ -378,8 +395,8 @@ static void app_thread(void *arg)
     }
 
     /* Publish some messages */
-    for (i = 0; i < 5;)
-    {
+   for(;;)
+   {
         if (connected)
         {
             err = tcpip_callback(publish_message, NULL);
@@ -390,12 +407,8 @@ static void app_thread(void *arg)
             i++;
         }
 
-        sys_msleep(1000U);
-    }
+        sys_msleep(publish_interval);
 
-    /* Publish voltage messages */
-    for (i = 0; i < 15;)
-    {
         if (connected)
         {
             err = tcpip_callback(publish_voltage_message, NULL);
@@ -406,12 +419,8 @@ static void app_thread(void *arg)
             i++;
         }
 
-        sys_msleep(1000U);
-    }
+        sys_msleep(publish_interval);
 
-    /* Publish voltage status messages */
-    for (i = 0; i < 15;)
-    {
         if (connected)
         {
             err = tcpip_callback(publish_voltage_status_message, NULL);
@@ -422,12 +431,8 @@ static void app_thread(void *arg)
             i++;
         }
 
-        sys_msleep(1000U);
-    }
+        sys_msleep(publish_interval);
 
-    /* Publish session notification messages */
-    for (i = 0; i < 5;)
-    {
         if (connected)
         {
             err = tcpip_callback(publish_session_notification, NULL);
@@ -438,7 +443,7 @@ static void app_thread(void *arg)
             i++;
         }
 
-        sys_msleep(1000U);
+        sys_msleep(publish_interval);
     }
 
     vTaskDelete(NULL);
