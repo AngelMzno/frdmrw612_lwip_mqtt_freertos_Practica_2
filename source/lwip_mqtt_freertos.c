@@ -122,7 +122,7 @@ int main(void)
     /* Define the init structure for the output LED pin*/
     gpio_pin_config_t led_config = {
         kGPIO_DigitalOutput,
-        1,
+        0,
     };
     
     BOARD_InitHardware();
@@ -133,6 +133,9 @@ int main(void)
     GPIO_PinInit(GPIO, 0U, RED_LED_PIN, &led_config);
     GPIO_PinInit(GPIO, 0U, GREEN_LED_PIN, &led_config);
 
+    GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
+    GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 1U);
+    GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 0U);  // Verde
 
     /* Initialize lwIP from thread */
     if (sys_thread_new("main", stack_init, NULL, INIT_THREAD_STACKSIZE, INIT_THREAD_PRIO) == NULL)
