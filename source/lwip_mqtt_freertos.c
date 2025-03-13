@@ -55,6 +55,7 @@
  ******************************************************************************/
 
 static phy_handle_t phyHandle;
+static volatile uint32_t uptime_counter = 0; // Global uptime counter
 
 /*******************************************************************************
  * Code
@@ -135,8 +136,7 @@ int main(void)
 
     GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
     GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 1U);
-    GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 0U);  // Verde
-
+    GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 1U);  
     /* Initialize lwIP from thread */
     if (sys_thread_new("main", stack_init, NULL, INIT_THREAD_STACKSIZE, INIT_THREAD_PRIO) == NULL)
     {

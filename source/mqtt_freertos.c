@@ -90,9 +90,21 @@ static ip_addr_t mqtt_addr;
 /*! @brief Indicates connection to MQTT broker. */
 static volatile bool connected = false;
 
+/*! @brief Global uptime counter. */
+static uint32_t  uptime_counter = 0;
+
 /*! @brief Global variable to adjust the sleep interval. */
 static volatile uint32_t publish_interval = 1000U;
 static volatile bool flag_frequency = 0;
+
+/* Variables to control the start, stop and status of the equipment */
+static volatile bool flag_start = 0;
+static char start_message[50];
+static volatile bool flag_stop = 0;
+static char stop_message[50];
+static volatile bool flag_status = 0;
+static char status_message[50];
+
 
 /*******************************************************************************
  * Code
@@ -128,6 +140,18 @@ static void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len
     {
         flag_frequency = 1;
     }
+    if (strcmp(topic, "PB2025_MZNO/control/start") == 0)
+    {
+        flag_start = 1;
+    }
+    if (strcmp(topic, "PB2025_MZNO/control/stop") == 0)
+    {
+        flag_stop = 1;
+    }
+    if (strcmp(topic, "PB2025_MZNO/monitoring/status") == 0)
+    {
+        flag_status = 1;
+    }
 }
 
 /*!
@@ -150,7 +174,6 @@ static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t f
             PRINTF("\\x%02x", data[i]);
         }
     }
-
     if (flags & MQTT_DATA_FLAG_LAST)
     {
         PRINTF("\"\r\n");
@@ -162,6 +185,38 @@ static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t f
         PRINTF("New publish interval: %d ms\r\n", publish_interval);
         flag_frequency = 0;
     }
+    if (flag_start)
+    {
+        strncpy(start_message, (const char *)data, len);
+        PRINTF(" %s\r\n", start_message);
+        PRINTF("Arrancando Maquina");
+        stop_message[i] = '\0';
+        /*Turn on blue led*/
+        GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 0U);
+        GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 1U);
+        GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 1U);
+        flag_start = 0;
+    }
+    if (flag_stop)
+    {
+        strncpy(stop_message, (const char *)data, len);
+        PRINTF(" %s\r\n", stop_message);    
+        PRINTF("Deteniendo Maquina");
+        start_message[i] = '\0';
+        /*Turn off blue led*/       
+        GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
+        flag_stop = 0;
+    }
+    if (flag_status)
+    {
+        status_message[i] = '\0';
+        strncpy(status_message, (const char *)data, len);
+        PRINTF("Estado de la maquina: %s\r\n", status_message);
+        flag_status = 0;
+    }
+    
+
+
 
 }
 
@@ -247,11 +302,6 @@ static void connect_to_mqtt(void *ctx)
     LWIP_UNUSED_ARG(ctx);
 
     PRINTF("Connecting to MQTT broker at %s...\r\n", ipaddr_ntoa(&mqtt_addr));
-    /*Turn on green led*/
-    GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
-    GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 1U);
-    GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 0U);  
-
     mqtt_client_connect(mqtt_client, &mqtt_addr, EXAMPLE_MQTT_SERVER_PORT, mqtt_connection_cb,
                         LWIP_CONST_CAST(void *, &mqtt_client_info), &mqtt_client_info);
 }
@@ -279,13 +329,11 @@ static void mqtt_message_published_cb(void *arg, err_t err)
 static void publish_message(void *ctx)
 {
     static const char *topic = "PB2025_MZNO/sesion/log";
-    static int uptime_counter = 0;
     char message[50];
 
     LWIP_UNUSED_ARG(ctx);
 
     snprintf(message, sizeof(message), "Uptime: %d seconds", uptime_counter);
-    uptime_counter++;
 
     PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
 
@@ -299,14 +347,28 @@ static void publish_voltage_message(void *ctx)
 {
     static const char *topic = "PB2025_MZNO/equipment/voltage";
     char message[20];
-    int voltage = (rand() % 31) + 100; // Genera un valor aleatorio entre 110 y 140
+    static int voltage = 120; 
+
+        int fixed_variation = 2; 
+        int random_variation = (rand() % 3) - 1; 
+        static int direction = 1;
+
+
+        voltage += direction * fixed_variation + random_variation;
 
     LWIP_UNUSED_ARG(ctx);
+  
+    if (voltage >= 130) {
+        voltage = 130;  
+        direction = -1; 
+    } else if (voltage <= 110) {
+        voltage = 110;  
+        direction = 1;  
+    }
+
 
     snprintf(message, sizeof(message), " %d", voltage);
-
     PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
-
     mqtt_publish(mqtt_client, topic, message, strlen(message), 1, 0, mqtt_message_published_cb, (void *)topic);
 }
 
@@ -336,6 +398,7 @@ static void publish_voltage_status_message(void *ctx)
 
     PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
 
+
     mqtt_publish(mqtt_client, topic, message, strlen(message), 1, 0, mqtt_message_published_cb, (void *)topic);
 }
 
@@ -356,6 +419,7 @@ static void publish_session_notification(void *ctx)
     PRINTF("Going to publish to the topic \"%s\"...\r\n", topic);
 
     mqtt_publish(mqtt_client, topic, message, strlen(message), 1, 0, mqtt_message_published_cb, (void *)topic);
+    
 }
 
 /*!
@@ -376,6 +440,7 @@ static void app_thread(void *arg)
      * Could just call netconn_gethostbyname() on both IP address or host name,
      * but we want to print some info if goint to resolve it.
      */
+    
     if (ipaddr_aton(EXAMPLE_MQTT_SERVER_HOST, &mqtt_addr) && IP_IS_V4(&mqtt_addr))
     {
         /* Already an IP address */
@@ -405,6 +470,31 @@ static void app_thread(void *arg)
     /* Publish some messages */
    for(;;)
    {
+
+        if (strcmp(status_message, "Enviar a servicio") == 0) 
+        {   // Turn on red led
+            GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
+            GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 0U);
+            GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 1U);  
+            status_message[0] = '\0';
+        }   
+        else if (strcmp(status_message, "Sin garantia") == 0) 
+        {   //turn on yellow led
+            GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
+            GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 0U);
+            GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN, 0U);
+            status_message[0] = '\0';
+        }
+        else if (strcmp(status_message, "Todo en orden") == 0) 
+        {   //turn on green led
+            GPIO_PinWrite(GPIO, 0U, BLUE_LED_PIN, 1U);
+            GPIO_PinWrite(GPIO, 0U, RED_LED_PIN, 1U);
+            GPIO_PinWrite(GPIO, 0U, GREEN_LED_PIN,  0U);
+            status_message[0] = '\0';
+        }
+
+    if (strcmp(start_message, "start") == 0) 
+    {
         if (connected)
         {
             err = tcpip_callback(publish_message, NULL);
@@ -412,11 +502,12 @@ static void app_thread(void *arg)
             {
                 PRINTF("Failed to invoke publishing of a message on the tcpip_thread: %d.\r\n", err);
             }
-            i++;
         }
 
         sys_msleep(publish_interval);
 
+   
+                  
         if (connected)
         {
             err = tcpip_callback(publish_voltage_message, NULL);
@@ -424,7 +515,6 @@ static void app_thread(void *arg)
             {
                 PRINTF("Failed to invoke publishing of a voltage message on the tcpip_thread: %d.\r\n", err);
             }
-            i++;
         }
 
         sys_msleep(publish_interval);
@@ -436,9 +526,8 @@ static void app_thread(void *arg)
             {
                 PRINTF("Failed to invoke publishing of a voltage status message on the tcpip_thread: %d.\r\n", err);
             }
-            i++;
         }
-
+    
         sys_msleep(publish_interval);
 
         if (connected)
@@ -448,13 +537,29 @@ static void app_thread(void *arg)
             {
                 PRINTF("Failed to invoke publishing of a session notification message on the tcpip_thread: %d.\r\n", err);
             }
-            i++;
+
         }
+        
+       
 
         sys_msleep(publish_interval);
     }
+    }
 
     vTaskDelete(NULL);
+}
+
+/*!
+ * @brief Task to increment a counter every second.
+ */
+static void counter_task(void *arg)
+{
+        while (1)
+    {
+        //PRINTF("Counter value: %d\r\n", counter);
+        uptime_counter++;
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+    }
 }
 
 static void generate_client_id(void)
@@ -535,5 +640,11 @@ void mqtt_freertos_run_thread(struct netif *netif)
     if (sys_thread_new("app_task", app_thread, netif, APP_THREAD_STACKSIZE, APP_THREAD_PRIO) == NULL)
     {
         LWIP_ASSERT("mqtt_freertos_start_thread(): Task creation failed.", 0);
+    }
+
+    // Create the counter task
+    if (xTaskCreate(counter_task, "Counter Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS)
+    {
+        PRINTF("Counter task creation failed.\r\n");
     }
 }
